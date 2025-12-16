@@ -1,0 +1,64 @@
+<mujoco model="peg_in_hole">
+  <!-- 
+  - Timestep updated to 0.0008s as per T=4, Ncnt=20, Nsim=250.
+  - Added 'gravity' to option.
+  -->
+  <option timestep="0.0008" integrator="implicitfast" iterations="1000" cone="elliptic" o_solimp="0.0000 0.000 0.0001 0.5 1" o_solref="-100000 -500" o_margin="0.00005" gravity="0 0 -9.81">
+    <!-- <flag override="enable" /> -->
+  </option>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" width="128" height="128" rgb1=".6 .8 1.0" rgb2=".2 .2 .2" />
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4" />
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2" />
+  </asset>
+
+  <visual>
+    <map force="0.1" zfar="30" />
+    <rgba haze="0.15 0.25 0.35 1" />
+    <global offwidth="2560" offheight="1440" elevation="-20" azimuth="120" />
+  </visual>
+
+  <worldbody>
+    <light pos="0 -0.1 0.5" dir="0 0.2 -1" diffuse="0.7 0.7 0.7" specular="0.3 0.3 0.3" directional="true" />
+    
+    <!-- Renamed to 'hole' for clarity -->
+    <body name="hole" pos="0 0 0.15" quat="1 0 0 0">
+      <geom name="framing1" type="box" pos="-0.175 0 0.075" size="0.15 0.325 0.075" rgba=".5 .5 .5 1" />
+      <geom name="framing2" type="box" pos="0.175 0 0.075" size="0.15 0.325 0.075" rgba=".5 .5 .5 1" />
+      <geom name="framing3" type="box" pos="0 -0.175 0.075" size="0.325 0.15 0.075" rgba=".5 .5 .5 1" />
+      <geom name="framing4" type="box" pos="0 0.175 0.075" size="0.325 0.15 0.075" rgba=".5 .5 .5 1" />
+      <geom name="framing5" type="box" pos="0 0 -0.075" size="0.325 0.325 0.075" rgba=".5 .5 .5 1" />
+    </body>
+
+    <!-- Renamed to 'peg' for clarity -->
+    <body name="peg" pos="0.1 0.0 0.35" quat="0.9659 0.2403 0.0961 0">
+      <!-- Added a free joint to allow 6-DOF control -->
+      <joint name="peg_joint" type="free" damping="50.0" />
+      <geom name="peg_geom" type="box" pos="0 0 0" size="0.025 0.025 0.1" rgba=".1 .1 1 1" />
+      <!-- Added a site for precise position tracking -->
+      <site name="peg_tip" pos="0 0 -0.1" size="0.01" />
+      <site name="peg_top" pos="0 0 0.1" size="0.01" />
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- 
+    Added position actuators for the peg's 6 DOFs.
+    This effectively creates an impedance controller.
+    - kp is the stiffness (from probdat.yaml kp=2000, ko=300).
+    - kv is implicit via the joint's damping attribute.
+    -->
+    <position joint="peg_joint" name="peg_x" kp="2000" />
+    <position joint="peg_joint" name="peg_y" kp="2000" />
+    <position joint="peg_joint" name="peg_z" kp="2000" />
+    <position joint="peg_joint" name="peg_roll" kp="300" />
+    <position joint="peg_joint" name="peg_pitch" kp="300" />
+    <position joint="peg_joint" name="peg_yaw" kp="300" />
+  </actuator>
+
+  <keyframe>
+    <!-- Goal state for reference -->
+    <key name="goal" qpos="0.0 0.0 0.1 1 0 0 0" />
+  </keyframe>
+</mujoco>
